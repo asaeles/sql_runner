@@ -36,8 +36,8 @@
 #
 # -----------------------------------------------------------------------------
 #
-# Author   :  Ahmad Sulaeman <asaeles@gmail.com>
-# License  :  GNU General Public License v3.0
+# Author   : Ahmad Sulaeman <asaeles@gmail.com>
+# License  : GNU General Public License v3.0
 # 
 ################################################################################
 
