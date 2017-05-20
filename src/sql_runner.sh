@@ -1,4 +1,45 @@
-#By Ahmad Sulaeman <asaeles@gmail.com>
+################################################################################
+#
+# SQL Runner
+#  This shell script is inspired from a standard used in our company:
+#   . There are 3 main large directories on the application server: Bin, Log
+#     and Work (this one is used for input and output files).
+#   . Under each directory there is one sub-directory for each SQL tool.
+#   . The same directory structure should be replicated on the DB server.
+#
+#  So for a tool named "Foo Bar", the structure should be as follows:
+#   Application server:
+#    Tool path   :    $HOME/$BIN/FOO_BAR/foo_bar_v1.1.1.sql
+#    Log path    :    $HOME/$LOG/FOO_BAR/*.*
+#    Input path  :    $HOME/$WORK/FOO_BAR/INPUT/*.*
+#    Output path :    $HOME/$WORK/FOO_BAR/OUTPUT/*.*
+#   Database server:
+#    Log path    :    $HOME/$LOG/FOO_BAR/*.*
+#    Input path  :    $HOME/$WORK/FOO_BAR/INPUT/*.*
+#    Output path :    $HOME/$WORK/FOO_BAR/OUTPUT/*.*
+#   
+#  The script handles moving files between application and database servers
+#   and then deletes files from database after SQL script finishes.
+#  It also creates a simple log file in the tool path to write extra info
+#   about running.
+#  It returns non-zero error codes for severe/SQL errors
+#  
+#  Usage:
+#   1) The SQL Runner script (this script) should be renamed to match the
+#      name of the SQL script and placed in the tool directory, because it
+#      depends on:
+#       . The current path to deduce the script directory (FOO_BAR)
+#       . It's own file name to deduce the SQL scripts name (foo_bar_v1.1.1.sql)
+#   2) The variables set in the start of the script should be changed to match
+#      the required features and the application server directories and the 
+#      database server host-name/IP for SSH
+#
+# -----------------------------------------------------------------------------
+#
+# Author   : Ahmad Sulaeman <asaeles@gmail.com>
+# License  : GNU General Public License v3.0
+# 
+################################################################################
 
 L=1 #If the scripts needs log folder set to 1 otherwise 0
 O=1 #If the scripts needs output folder set to 1 otherwise 0
