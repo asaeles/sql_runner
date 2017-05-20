@@ -1,3 +1,5 @@
+#By Ahmad Sulaeman <asaeles@gmail.com>
+
 L=1 #If the scripts needs log folder set to 1 otherwise 0
 O=1 #If the scripts needs output folder set to 1 otherwise 0
 I=1 #If the scripts needs input/done folders set to 1 otherwise 0
