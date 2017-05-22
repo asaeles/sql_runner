@@ -3,7 +3,7 @@
 # SQL Runner
 #  This shell script is inspired from a standard used in our company:
 #   . There are 3 main large directories on the application server: Bin, Log
-#     and Work (this one is used for input and output files).
+#     and Work (this one is used for input, done and output files).
 #   . Under each directory there is one sub-directory for each SQL tool.
 #   . The same directory structure should be replicated on the DB server.
 #
@@ -12,18 +12,22 @@
 #    Tool path   :    $HOME/$BIN/FOO_BAR/foo_bar_v1.1.1.sql
 #    Log path    :    $HOME/$LOG/FOO_BAR/*.*
 #    Input path  :    $HOME/$WORK/FOO_BAR/INPUT/*.*
+#    Done path   :    $HOME/$WORK/FOO_BAR/DONE/*.*
 #    Output path :    $HOME/$WORK/FOO_BAR/OUTPUT/*.*
 #   Database server:
 #    Log path    :    $HOME/$LOG/FOO_BAR/*.*
 #    Input path  :    $HOME/$WORK/FOO_BAR/INPUT/*.*
 #    Output path :    $HOME/$WORK/FOO_BAR/OUTPUT/*.*
-#   
+#
 #  The script handles moving files between application and database servers
 #   and then deletes files from database after SQL script finishes.
+#  It automatically moves input files after the SQL script finishes to the
+#   Done folder.
 #  It also creates a simple log file in the tool path to write extra info
 #   about running.
+#  It passes all command line arguments to SQL*Plus command
 #  It returns non-zero error codes for severe/SQL errors
-#  
+#
 #  Usage:
 #   1) The SQL Runner script (this script) should be renamed to match the
 #      name of the SQL script and placed in the tool directory, because it
@@ -38,12 +42,16 @@
 #
 # Author   :  Ahmad Sulaeman <asaeles@gmail.com>
 # License  :  GNU General Public License v3.0
-# 
+#
 ################################################################################
 
 L=1 #If the scripts needs log folder set to 1 otherwise 0
 O=1 #If the scripts needs output folder set to 1 otherwise 0
 I=1 #If the scripts needs input/done folders set to 1 otherwise 0
+LD="$HOME/LOG_DIR" #Local Log directry
+WD="$HOME/WORK_DIR" #Local Work directory (will hold Input, Done and Ouput)
+DB="DB_HOSTNAME" #Unix DB hostname or IP
+CS="SQL_CONN_STRING" #user/pass@sid
 
 basename $0 | sed "s|\.[^\.]*$||" | read SCRIPT_NAME
 if [ $? != 0 ]; then echo "ERR: Cannot get script name\n"; return 1; fi
@@ -89,13 +97,11 @@ basename $SCRIPT_PATH | read SCRIPT_DIR
 if [ $? != 0 ] || [ "S$SCRIPT_DIR" = "S" ]; then pts; echo "ERR: Cannot get current script directory\n" | tee -a $lf; return 1; fi
 pts; echo "INFO: Script directory: '$SCRIPT_DIR'\n" >>$lf
 
-l="/workdata/WORK/ALU_LOG/$SCRIPT_DIR/"
-o="/workdata/WORK/ALU_WORK/$SCRIPT_DIR/OUTPUT/"
-i="/workdata/WORK/ALU_WORK/$SCRIPT_DIR/INPUT/"
-d="/workdata/WORK/ALU_WORK/$SCRIPT_DIR/DONE/"
+l="$LD/$SCRIPT_DIR/"
+o="$LW/$SCRIPT_DIR/OUTPUT/"
+i="$LW/$SCRIPT_DIR/INPUT/"
+d="$LW/$SCRIPT_DIR/DONE/"
 
-DB=`$HOME/ALU_BIN/GENERIC/get_db_name.sh $BSCSDB 2>>$lf` 2>>$lf
-if [ $? != 0 ] || [ "D$DB" = "D" ]; then pts; echo "ERR: Cannot get databse host name\n" | tee -a $lf; return 1; fi
 pts; echo "INFO: Database host name: '$DB'\n" >>$lf
 
 HOST=`hostname 2>>$lf` 2>>$lf
@@ -106,7 +112,7 @@ if [ $L = 1 ]; then pts; echo "INFO: Script has log\n" >>$lf; fi
 if [ $O = 1 ]; then pts; echo "INFO: Script has output\n" >>$lf; fi
 if [ $I = 1 ]; then pts; echo "INFO: Script has input\n" >>$lf; fi
 
-sqlplus -s sysadm/sysadm@$BSCSDB <<EOF | read VER
+sqlplus -s "$CS" <<EOF | read VER
   WHENEVER SQLERROR EXIT 1 ROLLBACK;
   WHENEVER OSERROR EXIT 2 ROLLBACK;
   SET PAGES 0;
@@ -196,7 +202,7 @@ fi
 
 rc=0
 pts; echo "Starting SQL script '$SCRIPT_SQL'\n" | tee -a $lf
-sqlplus sysadm/sysadm@$BSCSDB @$SCRIPT_SQL $@
+sqlplus "$CS" @$SCRIPT_SQL $@
 if [ $? != 0 ]; then
   pts; echo "\nERR: Error running SQL script '$SCRIPT_SQL'\n" | tee -a $lf; rc=1
 else
